@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TextMind 文心系统 - 中文心理语言分析系统</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "Microsoft YaHei", "Segoe UI", sans-serif; background: #edf1f7; color: #333; line-height: 1.6; }
+
+/* Header */
+.header { background: #0f172a; color: white; padding: 4.5rem 2rem 3.5rem; text-align: center; position: relative; overflow: hidden; }
+.header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 50% 0%, rgba(56,109,194,0.35) 0%, transparent 65%); pointer-events: none; }
+.header-content { position: relative; z-index: 1; }
+.header-title { display: flex; align-items: baseline; justify-content: center; gap: 0.8rem; flex-wrap: wrap; }
+.header-title .cn { font-size: 3.4rem; font-weight: 800; letter-spacing: 0.08em; background: linear-gradient(135deg, #fff 0%, #93c5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.header-title .en { font-size: 1.6rem; font-weight: 300; letter-spacing: 0.12em; opacity: 0.5; text-transform: uppercase; position: relative; top: -0.15rem; }
+.header .subtitle { font-size: 1.05rem; opacity: 0.55; letter-spacing: 0.2em; margin-top: 0.8rem; font-weight: 300; }
+.header .badges { margin-top: 1.5rem; display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; }
+.header .badge { display: inline-block; padding: 0.3rem 0.9rem; border-radius: 4px; font-size: 0.75rem; letter-spacing: 0.08em; font-weight: 500; border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.05); }
+
+/* Nav */
+nav { background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 100; }
+nav .container { max-width: 1100px; margin: 0 auto; display: flex; justify-content: center; gap: 0; }
+nav a { flex: 1; text-align: center; padding: 1rem 1.5rem; text-decoration: none; color: #4a5568; font-weight: 500; border-bottom: 3px solid transparent; transition: all 0.2s; }
+nav a:hover, nav a.active { color: #2d5a9e; border-bottom-color: #2d5a9e; }
+
+/* Sections */
+.container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+section { padding: 2.5rem 0; }
+section h2 { font-size: 1.6rem; margin-bottom: 1.5rem; color: #1a365d; border-left: 4px solid #2d5a9e; padding-left: 0.8rem; }
+
+/* Cards */
+.card { background: #fff; border-radius: 12px; padding: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1.5rem; }
+
+/* Download Section */
+.download-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+.download-card { text-align: center; }
+.download-card .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.download-card h3 { margin-bottom: 0.5rem; }
+.download-card p { color: #718096; font-size: 0.9rem; margin-bottom: 1rem; }
+.btn { display: inline-block; padding: 0.7rem 1.8rem; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.2s; cursor: pointer; border: none; font-size: 0.95rem; }
+.btn-primary { background: #2d5a9e; color: white; }
+.btn-primary:hover { background: #1a365d; }
+
+/* Demo Section */
+.demo-controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.demo-controls select, .demo-controls button { padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.95rem; }
+.demo-controls select { border: 1px solid #cbd5e0; background: #fff; flex: 1; min-width: 200px; }
+#analyzeBtn { background: #2d5a9e; color: #fff; border: none; cursor: pointer; font-weight: 600; }
+#analyzeBtn:hover { background: #1a365d; }
+#analyzeBtn:disabled { background: #a0aec0; cursor: not-allowed; }
+
+.demo-options { display: flex; gap: 2rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.option-group { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.option-group .option-label { font-weight: 600; color: #334155; font-size: 0.9rem; white-space: nowrap; }
+.option-group label { font-size: 0.9rem; color: #4a5568; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.3rem; }
+.option-group input[type="radio"] { accent-color: #2d5a9e; }
+
+.text-preview { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; max-height: 200px; overflow-y: auto; font-size: 0.9rem; color: #4a5568; white-space: pre-wrap; margin-bottom: 1.5rem; }
+
+/* Result table */
+.table-wrapper { overflow: auto; max-height: 70vh; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 1.5rem; }
+#resultTable { border-collapse: collapse; font-size: 0.8rem; white-space: nowrap; }
+#resultTable th, #resultTable td { padding: 0.45rem 0.7rem; border: 1px solid #e2e8f0; text-align: center; }
+#resultTable th { background: #f1f5f9; color: #334155; font-weight: 600; position: sticky; top: 0; z-index: 1; }
+#resultTable td:first-child, #resultTable th:first-child { position: sticky; left: 0; z-index: 2; background: #f1f5f9; font-weight: 600; text-align: left; }
+#resultTable th:first-child { z-index: 3; }
+#resultTable tr:hover td { background: #f8fafc; }
+#resultTable tr:hover td:first-child { background: #e8edf2; }
+
+/* Docs */
+.doc-content { line-height: 1.8; }
+.doc-content h3 { margin: 1.5rem 0 0.8rem; color: #2d5a9e; }
+.doc-content p { margin-bottom: 0.8rem; }
+.doc-content ul { padding-left: 1.5rem; margin-bottom: 0.8rem; }
+.doc-content code { background: #edf2f7; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+.doc-content table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+.doc-content table th, .doc-content table td { padding: 0.5rem; border: 1px solid #e2e8f0; text-align: left; }
+.doc-content table th { background: #f7fafc; }
+
+/* Footer */
+footer { background: #1a365d; color: rgba(255,255,255,0.7); padding: 2rem; text-align: center; font-size: 0.85rem; }
+footer a { color: rgba(255,255,255,0.9); }
+
+/* Loading spinner */
+.spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 0.5rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Guide carousel */
+.guide-carousel { position: relative; }
+.guide-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.guide-track::-webkit-scrollbar { display: none; }
+.guide-slide { flex: 0 0 100%; scroll-snap-align: start; padding: 2rem; display: flex; flex-direction: column; }
+.guide-slide .slide-title { font-size: 1.1rem; font-weight: 600; color: #1a365d; margin-bottom: 0.8rem; }
+.guide-slide p { font-size: 0.92rem; color: #334155; line-height: 1.8; margin-bottom: 1.2rem; }
+.guide-slide img { max-width: 80%; max-height: 420px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); align-self: center; }
+.guide-nav { display: flex; justify-content: center; align-items: center; gap: 1rem; padding: 1rem 0; }
+.guide-nav button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #cbd5e0; background: #fff; cursor: pointer; font-size: 1rem; color: #4a5568; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.guide-nav button:hover { background: #2d5a9e; color: #fff; border-color: #2d5a9e; }
+.guide-dots { display: flex; gap: 0.4rem; }
+.guide-dots span { width: 8px; height: 8px; border-radius: 50%; background: #cbd5e0; cursor: pointer; transition: all 0.2s; }
+.guide-dots span.active { background: #2d5a9e; width: 24px; border-radius: 4px; }
+.guide-counter { font-size: 0.8rem; color: #94a3b8; }
+
+/* FAQ */
+.faq-list { display: flex; flex-direction: column; gap: 1rem; }
+.faq-item { background: #fff; border-radius: 10px; padding: 1.2rem 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #edf2f7; }
+.faq-q { display: flex; align-items: flex-start; gap: 0.7rem; font-size: 0.92rem; font-weight: 600; color: #1a365d; margin-bottom: 0.6rem; }
+.faq-a { display: flex; align-items: flex-start; gap: 0.7rem; font-size: 0.88rem; color: #4a5568; line-height: 1.7; }
+.faq-tag { flex-shrink: 0; width: 24px; height: 24px; border-radius: 6px; background: #2d5a9e; color: #fff; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.faq-tag-a { background: #e8f4f8; color: #2d5a9e; }
+
+#results { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <div class="header-title">
+      <span class="cn">文心系统</span>
+      <span class="en">TextMind</span>
+    </div>
+    <p class="subtitle">中文心理语言分析系统 / SCLIWC2024 词典</p>
+    <div class="badges">
+      <span class="badge">SCLIWC2024</span>
+      <span class="badge">心理语义检测</span>
+      <span class="badge">116 心理类别</span>
+      <span class="badge">文本分析</span>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <div class="container">
+    <a href="#intro" class="active">简介</a>
+    <a href="#download">下载</a>
+    <a href="#demo">在线试用</a>
+    <a href="#docs">使用说明</a>
+    <a href="#dict-info">词典说明</a>
+  </div>
+</nav>
+
+<!-- Intro Section -->
+<section id="intro">
+  <div class="container">
+    <h2>简介</h2>
+    <div class="card doc-content">
+      <p>文心（TextMind）是面向简体中文的心理语言分析系统，基于 LIWC（Linguistic Inquiry and Word Count）方法论，通过统计文本中不同心理语言类别的词频比例，揭示文本背后的心理特征与表达偏好。</p>
+      <p>系统搭载最新修订的 <strong>SCLIWC2024</strong> 词典。该词典以 LIWC-22 英文词典为参照，在 CLIWC2015 与 SCLIWC 词典基础上，经过系统翻译、人工筛选、词向量扩展及专家校验四个阶段修订而成，共收录 <strong>19952 个词条</strong>，覆盖 <strong>116 个心理语言类别</strong>，涵盖语言维度、心理过程、社会过程、认知过程、感知过程、个人关注等多个层面。</p>
+    </div>
+
+    <h2 style="margin-top:2rem;">使用协议</h2>
+    <div class="card" style="background:#f8fafc; border-left: 4px solid #2d5a9e;">
+      <p style="font-size:0.9rem; color:#4a5568; line-height:1.8; margin-bottom:0.8rem;">使用文心系统及其词典，即视为同意以下条款：</p>
+      <ol style="font-size:0.88rem; color:#4a5568; line-height:2; padding-left:1.2rem;">
+        <li>本系统及词典<strong>仅限学术研究用途</strong>，不得用于商业目的，不得将词典的部分或全部内容转移给第三方。</li>
+        <li>在研究成果中使用了本系统或词典，请在报告中作<strong>相应引用</strong>。</li>
+        <li>本系统使用了 NLPIR（非商业免费）和 LTP（学术免费）等第三方组件，请同时遵守其使用协议。</li>
+        <li>为保障用户数据隐私安全，<strong>本网站不提供在线文本分析服务</strong>。页面上的"在线试用"仅使用内置示例文本在浏览器本地运行，不会上传任何数据。如需分析自有文本，请下载系统在本地离线使用。</li>
+      </ol>
+      <p style="font-size:0.85rem; color:#a0aec0; margin-top:0.8rem;">如有问题或建议，请联系：cuixt@psych.ac.cn / tszhu@psych.ac.cn</p>
+    </div>
+  </div>
+</section>
+
+<!-- Download Section -->
+<section id="download">
+  <div class="container">
+    <h2>下载</h2>
+    <div class="download-grid" style="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));">
+      <div class="card download-card">
+        <div class="icon">&#128230;</div>
+        <h3>文心系统</h3>
+        <p>完整程序包，含 textmind.exe、NLPIR 分词引擎及 SCLIWC2024 词典，解压即用。适用于 Windows。</p>
+        <span style="font-size:0.8rem;color:#a0aec0;margin-bottom:0.5rem;display:block;">95 MB</span>
+        <a class="btn btn-primary" href="https://github.com/cuixt/textmind/releases/latest/download/TextMind-System.zip">下载</a>
+      </div>
+      <div class="card download-card">
+        <div class="icon">&#128214;</div>
+        <h3>SCLIWC2024 词典</h3>
+        <p>最新版词典，基于 LIWC-22 修订，19952 词条，116 个心理语言类别。</p>
+        <span style="font-size:0.8rem;color:#a0aec0;margin-bottom:0.5rem;display:block;">149 KB</span>
+        <a class="btn btn-primary" href="dict-SCLIWC2024.zip" download>下载</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Demo Section -->
+<section id="demo">
+  <div class="container">
+    <h2>在线试用</h2>
+    <div class="card" style="background:#f7fafc;">
+      <p style="margin-bottom:1rem; color:#718096; font-size:0.9rem;">
+        选择一个示例文本，体验 SCLIWC2024 心理语言词频分析。分析完全在浏览器本地完成，不上传任何数据。
+      </p>
+      <div class="demo-controls">
+        <select id="sampleSelect">
+          <option value="">-- 请选择示例文本 --</option>
+          <option value="weibo">微博文本示例</option>
+          <option value="novel">清宫外史示例</option>
+        </select>
+        <button id="analyzeBtn" class="btn" disabled>开始分析</button>
+      </div>
+      <div class="demo-options">
+        <div class="option-group">
+          <span class="option-label">分词方式</span>
+          <label><input type="radio" name="segMode" value="ltp" checked> LTP分词</label>
+          <label><input type="radio" name="segMode" value="nlpir"> NLPIR分词</label>
+          <label><input type="radio" name="segMode" value="none"> 不分词</label>
+          <span style="font-size:0.75rem; color:#a0aec0;">（在线演示使用简易分词，精确分析请下载桌面程序）</span>
+        </div>
+        <div class="option-group">
+          <span class="option-label">特征提取粒度</span>
+          <label><input type="radio" name="granularity" value="paragraph"> 按段（paragraph）</label>
+          <label><input type="radio" name="granularity" value="file" checked> 按文件</label>
+        </div>
+      </div>
+      <div id="textPreview" class="text-preview" style="display:none;"></div>
+    </div>
+
+    <div id="results">
+      <div class="table-wrapper">
+        <table id="resultTable"></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Docs Section -->
+<section id="docs">
+  <div class="container">
+    <h2>使用说明</h2>
+    <p style="color:#718096; font-size:0.9rem; margin-bottom:1.5rem;">文心中文心理分析系统是绿色版软件，不需要安装，直接打开 textmind.exe 运行即可。</p>
+
+    <div class="card guide-carousel" style="padding:0; overflow:hidden;">
+      <div class="guide-track" id="guideTrack">
+        <div class="guide-slide">
+          <div class="slide-title">1. 开启软件</div>
+          <p>双击或右键打开 textmind.exe。界面共有「文本演示」「文件处理」「特征说明」「关于文心」「联系我们」五个菜单项，其中「特征说明」「关于文心」「联系我们」是软件辅助说明，下面将分别介绍「文本演示」和「文件处理」。</p>
+          <img src="1.png" alt="开启软件">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">2a. 文本演示</div>
+          <p>点击「文本演示」项，进入文本演示界面，可直接输入文本进行分析。</p>
+          <img src="2a.png" alt="文本演示界面">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">2b. 输入文本并分析</div>
+          <p>输入分析文本，文本长度不得大于 20000 字，选择分词方式：LTP 分词器、NLPIR 分词器、不分词，点击「开始分析」按键，得出分析结果。</p>
+          <img src="2b.png" alt="分析结果">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">2c. 导出数据</div>
+          <p>点击「导出」按键，弹出包含特征数据的文本框，可剪切复制。点击「清空」按键可清空所有数据。</p>
+          <img src="2c.png" alt="导出数据">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">3a. 文件处理</div>
+          <p>点击「文件处理」项，进入文件批量处理界面。</p>
+          <img src="3a.png" alt="文件处理界面">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">3b. 选择需要处理的文件</div>
+          <p>点击「浏览」按键，选择文件。文件支持多选（按住 Ctrl 选择）。注意，目前只支持文本文件和 CSV 文件，支持的文件编码方式有 ANSI、GBK、UTF-8、Unicode 等，不支持无 BOM 的 UTF-8 编码格式。</p>
+          <img src="3b.png" alt="选择文件">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">3c. 选择分词方式</div>
+          <p>默认使用 LTP 分词器。可选择 LTP 分词器、NLPIR 分词器或不分词。</p>
+          <img src="3c.png" alt="分词方式">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">3d. 选择特征提取粒度</div>
+          <p>默认按行计算特征。可选择按段（paragraph）或按文件计算。</p>
+          <img src="3d.png" alt="特征提取粒度">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">3e. 选择输出文件格式</div>
+          <p>选择输出文件的格式（TXT 或 CSV）。</p>
+          <img src="3e.png" alt="输出格式">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">3f. 选择输出目录</div>
+          <p>选择分析结果文件的保存位置。</p>
+          <img src="3f.png" alt="输出目录">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">3g. 配置完成</div>
+          <p>所有参数配置完成后，界面如下所示。确认无误后即可开始分析。</p>
+          <img src="3g.png" alt="配置完成">
+        </div>
+        <div class="guide-slide">
+          <div class="slide-title">3h. 开始分析</div>
+          <p>点击「开始」按键，开始进行分析处理。特征结果存储为 CSV 文件，按行时 ID 是文件名+行号，按文件时 ID 是文件名。点击「重置」按键可恢复所有默认设置。</p>
+          <img src="3h.png" alt="分析完成">
+        </div>
+      </div>
+      <div class="guide-nav">
+        <button id="guidePrev">&#8249;</button>
+        <div class="guide-dots" id="guideDots"></div>
+        <span class="guide-counter" id="guideCounter"></span>
+        <button id="guideNext">&#8250;</button>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;">
+      <h3 style="color:#1a365d; margin-bottom:1.2rem;">常见问题</h3>
+      <div class="faq-list">
+        <div class="faq-item">
+          <div class="faq-q"><span class="faq-tag">Q</span>使用 LTP 分词器，按文件计算特征时程序崩溃？</div>
+          <div class="faq-a"><span class="faq-tag faq-tag-a">A</span>单个文件过大，导致 LTP 错误。建议换用 NLPIR 分词或将大文件拆分为多个小文件处理。</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span class="faq-tag">Q</span>LTP 分词器 / NLPIR 分词器变灰色，无法选择？</div>
+          <div class="faq-a"><span class="faq-tag faq-tag-a">A</span>无法正确加载分词器，分词器模型损毁或者 NLPIR 授权过期，请从 <a href="https://github.com/NLPIR-team/NLPIR/tree/master/License" target="_blank">NLPIR GitHub</a> 下载最新授权文件，或联系我们。</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span class="faq-tag">Q</span>输出结果全为 0？</div>
+          <div class="faq-a"><span class="faq-tag faq-tag-a">A</span>检查 <code>dic</code> 目录下词典文件是否完整（应包含 dic.scliwc2204.ccpl.words、map.textmind.ALL、sym.Punctuation）。</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q"><span class="faq-tag">Q</span>文本出现乱码？</div>
+          <div class="faq-a"><span class="faq-tag faq-tag-a">A</span>确保输入文件编码为 ANSI / GBK / UTF-8 / Unicode 之一。不支持无 BOM 的 UTF-8 编码格式。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Dict Info -->
+<section id="dict-info">
+  <div class="container">
+    <h2>词典说明</h2>
+    <div class="card doc-content">
+      <h3>SCLIWC2024 词典</h3>
+      <p>SCLIWC2024（Simplified Chinese Linguistic Inquiry and Word Count 2024）是面向简体中文的心理语言词典，旨在为中文文本的心理语义分析提供标准化工具。</p>
+      <p>近年来，LIWC 工具在注意力网络、认知过程、情感调节、社会行为、思维方式、心理健康等领域得到广泛应用，并在人格预测、沟通行为分析、政治竞选分析等场景中构建了有效的预测模型。最新版 LIWC-22 词典新增了大量评估社会心理结构的变量，进一步拓展了应用潜力。</p>
+      <p>为推动 LIWC 工具的中文化进程，SCLIWC2024 词典在 CLIWC2015 和旧版 SCLIWC 基础上，参照 LIWC-22 进行了系统修订，历经<strong>四个阶段</strong>：整合已有中文 LIWC 词典并新增 LIWC-22 类别、融合 LIWC-22 词典结构与新旧词更新、基于腾讯 AI Lab 词向量模型扩展词条、陈旧词清理与词典结构校验。最终形成包含 <strong>116 个心理语言类别、19952 个词条</strong>的词典。</p>
+
+      <h3>类别体系</h3>
+      <p>SCLIWC2024 的类别维度按 LIWC-22 划分为 Basic（基础）和 Expanded（扩展）两大层级，涵盖以下主要维度：</p>
+      <table>
+        <tr><th>维度</th><th>包含类别</th></tr>
+        <tr><td>语言维度 (Linguistic)</td><td>function, pronoun, ppron, i, we, you, shehe, they, ipron, number, prep, auxverb, adverb, conj, negate, verb, quantity 等</td></tr>
+        <tr><td>驱动力 (Drives)</td><td>affiliation, achieve, power, reward, risk</td></tr>
+        <tr><td>认知过程 (Cognition)</td><td>cogproc, insight, cause, discrep, tentat, certitude, differ, memory, allnone</td></tr>
+        <tr><td>情感过程 (Affect)</td><td>tone_pos, tone_neg, emotion, emo_pos, emo_neg, emo_anx, emo_anger, emo_sad, swear</td></tr>
+        <tr><td>社会过程 (Social)</td><td>socbehav, prosocial, polite, conflict, moral, comm, socrefs, family, friend, female, male</td></tr>
+        <tr><td>文化 (Culture)</td><td>politic, ethnicity, tech</td></tr>
+        <tr><td>生活方式 (Lifestyle)</td><td>leisure, home, work, money, relig</td></tr>
+        <tr><td>生理 (Physical)</td><td>health, illness, wellness, mental, substances, sexual, food, death</td></tr>
+        <tr><td>感知与相对性 (Perception)</td><td>attention, motion, space, visual, auditory, feeling</td></tr>
+        <tr><td>时间焦点 (Time)</td><td>focuspast, focuspresent, focusfuture</td></tr>
+        <tr><td>状态与动机 (States &amp; Motives)</td><td>need, want, acquire, lack, fulfill, fatigue, curiosity, allure</td></tr>
+        <tr><td>会话特征 (Conversation)</td><td>netspeak, assent, nonflu, filler</td></tr>
+      </table>
+
+      <h3>引用</h3>
+      <p>如在研究中使用了文心系统或 SCLIWC2024 词典，请引用：</p>
+      <p style="background:#f1f5f9; padding:0.8rem 1rem; border-radius:6px; font-size:0.85rem; color:#475569; line-height:1.8;">崔雪婷, 陈思仪, 赵楠, 刘晓倩, 朱廷劭. (2024). 简体中文LIWC2024 (SCLIWC2024) 词典的修订与验证. ChinaXiv:202404.00159v1.<br><a href="https://psych.chinaxiv.org/abs/202404.00159" target="_blank" style="color:#2d5a9e;">https://psych.chinaxiv.org/abs/202404.00159</a></p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>文心 TextMind · 中国科学院心理研究所计算网络心理实验室 (CCPL)</p>
+  <p style="margin-top:0.5rem;">本页面分析功能仅为演示，完整分析请下载桌面程序使用</p>
+</footer>
+
+<script src="dict-data.js"></script>
+<script src="samples.js"></script>
+<script>
+// ===== Column order from map (sorted by ID) =====
+const MAP_COLS = [
+  "Linguistic","function","pronoun","ppron","i","we","you","shehe","they","ipron",
+  "number","prep","auxverb","adverb","conj","negate","verb","quantity",
+  "Drives","affiliation","achieve","power",
+  "Cognition","allnone","cogproc","insight","cause","discrep","tentat","certitude","differ","memory",
+  "affect","tone_pos","tone_neg","emotion","emo_pos","emo_neg","emo_anx","emo_anger","emo_sad","swear",
+  "Social","socbehav","prosocial","polite","conflict","moral","comm","socrefs","family","friend","female","male",
+  "Culture","politic","ethnicity","tech",
+  "Lifestyle","leisure","home","work","money","relig",
+  "Physical","health","illness","wellness","mental","substances","sexual","food","death",
+  "need","want","acquire","lack","fulfill","fatigue",
+  "reward","risk","curiosity","allure",
+  "Perception","attention","motion","space","visual","auditory","feeling",
+  "time","focuspast","focuspresent","focusfuture",
+  "Conversation","netspeak","assent","nonflu","filler",
+  "Body","Compare","Interrog","Relative","Humans","Inhibition","Exclusive","Inclusive",
+  "ProgM","Particle","General_pa","Modal_pa","PrepEnd","QuanUnit","SpecArt","TenseM","YouPL",
+  "Psychology","Love","tPast","tNow","tFuture",
+  "Period","Comma","Colon","SemiC","QMark","Exclam","Dash","Quote","Apostrophe","Parenth","OtherP"
+];
+const STAT_COLS = ["WordCount","WordPerSentence","RateDicCover","RateNumeral","RateSixLtrWord","RateFourCharWord","RateLatinWord","NumAtMention","NumEmotion","NumHashTag","NumURLs"];
+
+// ===== Build word set for max-match segmentation =====
+let maxWordLen = 1;
+const allWords = new Set();
+for (const w in DICT) {
+  allWords.add(w);
+  if (w.length > maxWordLen) maxWordLen = w.length;
+}
+
+// ===== Forward Maximum Matching =====
+function segment(text) {
+  const tokens = [];
+  let i = 0;
+  while (i < text.length) {
+    let matched = false;
+    for (let len = Math.min(maxWordLen, text.length - i); len > 1; len--) {
+      const candidate = text.substring(i, i + len);
+      if (allWords.has(candidate) || PUNCTUATION[candidate]) {
+        tokens.push(candidate);
+        i += len;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) { tokens.push(text[i]); i++; }
+  }
+  return tokens;
+}
+
+function lookupCategories(word) {
+  if (DICT[word]) return DICT[word];
+  if (PUNCTUATION[word]) return [PUNCTUATION[word]];
+  for (const wc of WILDCARDS) {
+    if (word.startsWith(wc.prefix) && word.length > wc.prefix.length) return wc.categories;
+  }
+  return null;
+}
+
+// ===== Analyze: output CSV-style rows =====
+function analyze(text, granularity, fileName) {
+  const cleanText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const baseName = fileName || 'file';
+  let chunks;
+  if (granularity === 'file') {
+    chunks = [{ id: baseName, text: cleanText }];
+  } else {
+    const paragraphs = cleanText.split(/\n/).filter(s => s.trim());
+    chunks = paragraphs.map((p, i) => ({ id: baseName + '_' + i, text: p }));
+  }
+
+  const rows = [];
+  for (let pi = 0; pi < chunks.length; pi++) {
+    const para = chunks[pi].text;
+    const sentences = para.split(/[。！？]+/).filter(s => s.trim());
+    const tokens = segment(para);
+    const words = tokens.filter(t => t.trim());
+
+    const catCount = {};
+    MAP_COLS.forEach(c => catCount[c] = 0);
+
+    let contentWordCount = 0;
+    let matchedCount = 0;
+    let numeralCount = 0;
+    let sixLtrCount = 0;
+    let fourCharCount = 0;
+    let latinCount = 0;
+    let atCount = 0, emoCount = 0, hashCount = 0, urlCount = 0;
+
+    for (const word of words) {
+      if (PUNCTUATION[word]) {
+        const pCat = PUNCTUATION[word];
+        if (catCount[pCat] !== undefined) catCount[pCat]++;
+        continue;
+      }
+      contentWordCount++;
+      if (/^\d+$/.test(word)) numeralCount++;
+      if (word.length >= 6) sixLtrCount++;
+      if (word.length === 4) fourCharCount++;
+      if (/^[a-zA-Z]+$/.test(word)) latinCount++;
+
+      const cats = lookupCategories(word);
+      if (cats) {
+        matchedCount++;
+        for (const cat of cats) {
+          if (catCount[cat] !== undefined) catCount[cat]++;
+        }
+      }
+    }
+
+    const total = contentWordCount || 1;
+    const row = { ID: chunks[pi].id };
+    MAP_COLS.forEach(c => {
+      row[c] = (catCount[c] / total);
+    });
+    // Punctuation cols: keep as raw counts? No, program outputs ratio too. Let's use ratio.
+    // Actually program outputs ratio for all cols including punctuation
+    row.WordCount = contentWordCount;
+    row.WordPerSentence = sentences.length > 0 ? contentWordCount / sentences.length : 0;
+    row.RateDicCover = contentWordCount > 0 ? matchedCount / contentWordCount : 0;
+    row.RateNumeral = contentWordCount > 0 ? numeralCount / contentWordCount : 0;
+    row.RateSixLtrWord = contentWordCount > 0 ? sixLtrCount / contentWordCount : 0;
+    row.RateFourCharWord = contentWordCount > 0 ? fourCharCount / contentWordCount : 0;
+    row.RateLatinWord = contentWordCount > 0 ? latinCount / contentWordCount : 0;
+    row.NumAtMention = atCount;
+    row.NumEmotion = emoCount;
+    row.NumHashTag = hashCount;
+    row.NumURLs = urlCount;
+    rows.push(row);
+  }
+  return rows;
+}
+
+function renderResults(rows) {
+  document.getElementById('results').style.display = 'block';
+  const allCols = ['ID', ...MAP_COLS, ...STAT_COLS];
+  let html = '<thead><tr>';
+  for (const col of allCols) html += '<th>' + col + '</th>';
+  html += '</tr></thead><tbody>';
+  for (const row of rows) {
+    html += '<tr>';
+    for (const col of allCols) {
+      let val = row[col];
+      if (col === 'ID') {
+        html += '<td>' + val + '</td>';
+      } else if (col === 'WordCount' || col === 'NumAtMention' || col === 'NumEmotion' || col === 'NumHashTag' || col === 'NumURLs') {
+        html += '<td>' + val + '</td>';
+      } else {
+        html += '<td>' + (typeof val === 'number' ? (val === 0 ? '0' : val.toFixed(6).replace(/0+$/, '').replace(/\.$/, '')) : val) + '</td>';
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  document.getElementById('resultTable').innerHTML = html;
+}
+
+// ===== Event Listeners =====
+const sampleSelect = document.getElementById('sampleSelect');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const textPreview = document.getElementById('textPreview');
+
+sampleSelect.addEventListener('change', function() {
+  const key = this.value;
+  if (key && SAMPLES[key]) {
+    textPreview.style.display = 'block';
+    const t = SAMPLES[key];
+    textPreview.textContent = t.length > 1500 ? t.substring(0, 1500) + '\n\n... (共 ' + t.length + ' 字)' : t;
+    analyzeBtn.disabled = false;
+  } else {
+    textPreview.style.display = 'none';
+    analyzeBtn.disabled = true;
+  }
+});
+
+analyzeBtn.addEventListener('click', function() {
+  const key = sampleSelect.value;
+  if (!key || !SAMPLES[key]) return;
+  this.disabled = true;
+  this.innerHTML = '<span class="spinner"></span>分析中...';
+  setTimeout(() => {
+    const granularity = document.querySelector('input[name="granularity"]:checked').value;
+    const fileName = sampleSelect.querySelector('[value="'+key+'"]').textContent;
+    const rows = analyze(SAMPLES[key], granularity, fileName);
+    renderResults(rows);
+    this.disabled = false;
+    this.textContent = '重新分析';
+    document.getElementById('resultTable').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+});
+
+// ===== Guide Carousel =====
+(function() {
+  const track = document.getElementById('guideTrack');
+  const dots = document.getElementById('guideDots');
+  const counter = document.getElementById('guideCounter');
+  const slides = track.querySelectorAll('.guide-slide');
+  const total = slides.length;
+  let current = 0;
+
+  // Create dots
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('span');
+    if (i === 0) d.classList.add('active');
+    d.addEventListener('click', () => goTo(i));
+    dots.appendChild(d);
+  }
+
+  function updateUI() {
+    const allDots = dots.querySelectorAll('span');
+    allDots.forEach((d, i) => d.classList.toggle('active', i === current));
+    counter.textContent = (current + 1) + ' / ' + total;
+  }
+
+  function goTo(idx) {
+    current = Math.max(0, Math.min(idx, total - 1));
+    slides[current].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+    updateUI();
+  }
+
+  document.getElementById('guidePrev').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('guideNext').addEventListener('click', () => goTo(current + 1));
+
+  // Sync on scroll
+  let scrollTimer;
+  track.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => {
+      const idx = Math.round(track.scrollLeft / track.clientWidth);
+      current = Math.max(0, Math.min(idx, total - 1));
+      updateUI();
+    }, 100);
+  });
+
+  updateUI();
+})();
+
+// Smooth scroll for nav
+document.querySelectorAll('nav a').forEach(a => {
+  a.addEventListener('click', function(e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+    document.querySelectorAll('nav a').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
